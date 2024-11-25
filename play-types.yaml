@@ -1,0 +1,33 @@
+PlayTypes:
+  Shot: ShotType
+  Rebound: Rebounder
+  Foul: FoulType
+  Turnover: TurnoverPlayer
+  Violation: ViolationType
+  FreeThrow: FreeThrowNum
+  Timeout: TimeoutTeam
+  JumpBall: JumpballPoss
+  PlayerChange: EnterGame
+  LeaveGame: LeaveGame
+  JumpBallPossessionChange: JumpballPoss
+
+KeptCols:
+  - WinningTeam
+  - Quarter
+  - SecLeft
+  - AwayScore
+  - HomeScore
+  - ShotType
+  - ShotOutcome
+  - ShotDist
+  - FoulType
+  - ReboundType
+  - ViolationType
+  - TimeoutTeam
+  - FreeThrowOutcome
+  - FreeThrowNum
+  - TurnoverType
+  - TurnoverCause
+  - JumpballPoss
+  - PlayType
+  - PlaySide
