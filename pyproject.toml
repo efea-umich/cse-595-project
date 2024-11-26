@@ -19,3 +19,8 @@ dependencies = [
     "torchaudio>=2.5.1",
     "torchvision>=0.20.1",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]

@@ -41,18 +41,16 @@ class CorrelatedTimeSeriesDataset(Dataset):
                 # Value depends on a weighted sum of the last three timesteps
                 w1, w2, w3 = 0.6, 0.3, 0.1  # Example weights
                 seq_val = (
-                        w1 * sequence[t - 1] +
-                        (w2 * sequence[t - 2] if t > 1 else 0) +
-                        (w3 * sequence[t - 3] if t > 2 else 0)
+                    w1 * sequence[t - 1]
+                    + (w2 * sequence[t - 2] if t > 1 else 0)
+                    + (w3 * sequence[t - 3] if t > 2 else 0)
                 )
                 sequence[t] = seq_val + torch.randn(1) * self.noise_std  # Add noise
 
         # Use a weighted sum of the last three timesteps as the label
         label = (
-                        0.5 * sequence[-1] +
-                        0.3 * sequence[-2] +
-                        0.2 * sequence[-3]
-                ) + torch.randn(1) * self.noise_std  # Add noise to label
+            0.5 * sequence[-1] + 0.3 * sequence[-2] + 0.2 * sequence[-3]
+        ) + torch.randn(1) * self.noise_std  # Add noise to label
 
         return sequence, label
 
