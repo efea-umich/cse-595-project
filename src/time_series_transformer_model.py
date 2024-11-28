@@ -25,17 +25,22 @@ class TimeSeriesTransformerModel(L.LightningModule):
         x = x.reshape(-1, self.seq_len, self.features_per_step)
         x = self.embedder(x)
         x = x.permute(1, 0, 2)
-        x = self.pos_encoder(x)
+        # x = self.pos_encoder(x)
         x = self.transformer_encoder(x)
         x = x.permute(1, 0, 2)
-        return self.linear(x)
+        pred_raw = self.linear(x)
+        pred = torch.sigmoid(pred_raw)
+        return pred
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         y_hat = y_hat[:, -1, :]
-        loss = nn.MSELoss()(y_hat, y)
+        loss = nn.BCELoss()(y_hat, y)
+        accuracy = (y_hat.round() == y).float().mean()
+
         self.log("train_loss", loss, on_step=True, on_epoch=True)
+        self.log("train_accuracy", accuracy, on_step=True, on_epoch=True)
         return loss
 
     def configure_optimizers(self):
