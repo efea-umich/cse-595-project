@@ -25,7 +25,7 @@ class TimeSeriesTransformerModel(L.LightningModule):
         x = x.reshape(-1, self.seq_len, self.features_per_step)
         x = self.embedder(x)
         x = x.permute(1, 0, 2)
-        # x = self.pos_encoder(x)
+        x = self.pos_encoder(x)
         x = self.transformer_encoder(x)
         x = x.permute(1, 0, 2)
         pred_raw = self.linear(x)
