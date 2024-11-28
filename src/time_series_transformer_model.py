@@ -14,7 +14,7 @@ class TimeSeriesTransformerModel(L.LightningModule):
         self.embed_dim = embed_dim
         self.n_heads = n_heads
 
-        self.embedder = nn.Linear(1, self.embed_dim)
+        self.embedder = nn.Linear(self.features_per_step, self.embed_dim)
         self.pos_encoder = PositionalEncoding(self.embed_dim)
         encoder_layers = nn.TransformerEncoderLayer(self.embed_dim, self.n_heads)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=1)
