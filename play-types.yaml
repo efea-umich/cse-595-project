@@ -1,4 +1,4 @@
-PlayTypes:
+play_types:
   Shot: ShotType
   Rebound: Rebounder
   Foul: FoulType
@@ -11,7 +11,28 @@ PlayTypes:
   LeaveGame: LeaveGame
   JumpBallPossessionChange: JumpballPoss
 
-KeptCols:
+column_types:
+  Quarter: categorical
+  SecLeft: numeric
+  AwayScore: numeric
+  HomeScore: numeric
+  ShotType: categorical
+  ShotOutcome: categorical
+  ShotDist: numeric
+  FoulType: categorical
+  ReboundType: categorical
+  ViolationType: categorical
+  TimeoutTeam: categorical
+  FreeThrowOutcome: categorical
+  FreeThrowNum: categorical
+  TurnoverType: categorical
+  TurnoverCause: categorical
+  JumpballPoss: categorical
+  PlayType: categorical
+  PlaySide: categorical
+
+
+kept_cols:
   - WinningTeam
   - Quarter
   - SecLeft
@@ -31,3 +52,4 @@ KeptCols:
   - JumpballPoss
   - PlayType
   - PlaySide
+  - URL

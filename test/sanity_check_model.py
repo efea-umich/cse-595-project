@@ -26,7 +26,7 @@ class SanityCheckTSModel(L.LightningModule):
         accuracy = (y_hat.round() == y).float().mean()
 
         self.log("train_loss", loss, on_step=True, on_epoch=True)
-        self.log("train_accuracy", accuracy, on_step=True, on_epoch=True)
+        self.log("train_accuracy", accuracy, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def configure_optimizers(self):

@@ -2,10 +2,12 @@ from datetime import datetime
 
 import pandas as pd
 
+
 def strtobool(val):
     if val.lower() not in {"true", "false"}:
         raise ValueError("Invalid literal for boolean. Must be 'true' or 'false'.")
     return val.lower() == "true"
+
 
 def convert_tsf_to_dataframe(
     full_file_path_and_name,

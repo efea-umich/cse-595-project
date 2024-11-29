@@ -6,7 +6,9 @@ from positional_encoding import PositionalEncoding
 
 
 class TimeSeriesTransformerModel(L.LightningModule):
-    def __init__(self, seq_len: int, features_per_step: int, embed_dim: int, n_heads: int):
+    def __init__(
+        self, seq_len: int, features_per_step: int, embed_dim: int, n_heads: int
+    ):
         super(TimeSeriesTransformerModel, self).__init__()
 
         self.seq_len = seq_len
@@ -35,12 +37,27 @@ class TimeSeriesTransformerModel(L.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
+
         y_hat = y_hat[:, -1, :]
+
         loss = nn.BCELoss()(y_hat, y)
         accuracy = (y_hat.round() == y).float().mean()
 
         self.log("train_loss", loss, on_step=True, on_epoch=True)
-        self.log("train_accuracy", accuracy, on_step=True, on_epoch=True)
+        self.log("train_accuracy", accuracy, on_step=True, on_epoch=True, prog_bar=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self(x)
+
+        y_hat = y_hat[:, -1, :]
+
+        loss = nn.BCELoss()(y_hat, y)
+        accuracy = (y_hat.round() == y).float().mean()
+
+        self.log("val_loss", loss, on_step=True, on_epoch=True)
+        self.log("val_accuracy", accuracy, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def configure_optimizers(self):
