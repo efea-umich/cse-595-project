@@ -13,10 +13,10 @@ class DataEnhancer:
         self.config = config
 
     def enhance_data(self, data: pd.DataFrame):
-        data["PlayType"] = data.apply(self.get_play_type, axis=1)
-        data["PlaySide"] = data.apply(self.get_play_side, axis=1)
-        data["TimeoutSide"] = data.apply(self.generalize_timeout_team, axis=1)
-        data["WinningTeam"] = data.apply(self.generalize_winning_team, axis=1)
+        data["PlayType"] = self.get_play_type(data)
+        data["PlaySide"] = self.get_play_side(data)
+        data["TimeoutSide"] = self.get_timeout_team(data)
+        data["WinningTeam"] = self.get_winning_team(data)
 
         data = self.remove_unused_columns(data)
 
@@ -27,40 +27,57 @@ class DataEnhancer:
         data = data[columns_to_remove]
         return data
 
-    def generalize_timeout_team(self, row: pd.Series):
-        if pd.isnull(row["TimeoutTeam"]):
-            return np.nan
+    def get_timeout_team(self, df: pd.DataFrame):
+        timeout_side = pd.Series(
+            np.where(
+                df["TimeoutTeam"] == df["HomeTeam"],
+                0,
+                np.where(df["TimeoutTeam"] == df["AwayTeam"], 1, np.nan),
+            )
+        )
 
-        if row["TimeoutTeam"] == row["HomeTeam"]:
-            return "Home"
-        elif row["TimeoutTeam"] == row["AwayTeam"]:
-            return "Away"
-        else:
-            raise ValueError(f"TimeoutTeam does not match HomeTeam or AwayTeam")
+        invalid_rows = df["TimeoutTeam"].notnull() & pd.isna(timeout_side)
+        if invalid_rows.any():
+            row = df[invalid_rows]
+            logger.error("Invalid rows found when determining TimeoutSide: {}", row)
+            raise ValueError(
+                "Invalid rows found: TimeoutTeam is not null but TimeoutSide could not be determined. "
+                "Ensure TimeoutTeam matches HomeTeam or AwayTeam."
+            )
 
-    def generalize_winning_team(self, row: pd.Series):
-        if pd.isnull(row["WinningTeam"]):
-            return np.nan
+        return timeout_side
 
-        if row["WinningTeam"] == row["HomeTeam"]:
-            return "Home"
-        elif row["WinningTeam"] == row["AwayTeam"]:
-            return "Away"
-        else:
-            raise ValueError(f"WinningTeam does not match HomeTeam or AwayTeam")
+    def get_winning_team(self, df: pd.DataFrame):
+        winning_team = pd.Series(
+            np.where(
+                df["WinningTeam"] == df["HomeTeam"],
+                0,
+                np.where(df["WinningTeam"] == df["AwayTeam"], 1, np.nan),
+            )
+        )
 
-    def get_play_side(self, row: pd.Series):
-        if pd.notnull(row["HomePlay"]):
-            return "Home"
-        elif pd.notnull(row["AwayPlay"]):
-            return "Away"
-        else:
-            return np.nan
+        if pd.isnull(winning_team).any():
+            row = df[pd.isnull(winning_team)]
+            logger.error("WinningTeam does not match HomeTeam or AwayTeam: {}", row)
+            raise ValueError("WinningTeam does not match HomeTeam or AwayTeam")
+        return winning_team
 
-    def get_play_type(self, row: pd.Series):
-        play_types = self.config.play_types
-        for key, value in play_types.items():
-            if pd.notnull(row[value]):
-                return key
+    def get_play_side(self, df: pd.DataFrame) -> pd.Series:
+        play_side = pd.Series(
+            np.where(
+                pd.notnull(df["HomePlay"]),
+                0,
+                np.where(pd.notnull(df["AwayPlay"]), 1, np.nan),
+            )
+        )
 
-        return np.nan
+        return play_side
+
+
+
+    def get_play_type(self, data: pd.DataFrame) -> pd.Series:
+        play_type_col = pd.Series(np.nan, index=data.index, dtype=object)
+        for play_type, column in self.config.play_types.items():
+            mask = data[column].notnull() & play_type_col.isna()
+            play_type_col[mask] = play_type
+        return play_type_col

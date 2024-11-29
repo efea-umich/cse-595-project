@@ -7,9 +7,15 @@ from positional_encoding import PositionalEncoding
 
 class TimeSeriesTransformerModel(L.LightningModule):
     def __init__(
-        self, seq_len: int, features_per_step: int, embed_dim: int, n_heads: int
+        self,
+        seq_len: int,
+        features_per_step: int,
+        embed_dim: int,
+        n_heads: int,
+        num_layers: int = 1,
     ):
         super(TimeSeriesTransformerModel, self).__init__()
+        self.save_hyperparameters()
 
         self.seq_len = seq_len
         self.features_per_step = features_per_step
@@ -19,7 +25,9 @@ class TimeSeriesTransformerModel(L.LightningModule):
         self.embedder = nn.Linear(self.features_per_step, self.embed_dim)
         self.pos_encoder = PositionalEncoding(self.embed_dim)
         encoder_layers = nn.TransformerEncoderLayer(self.embed_dim, self.n_heads)
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=1)
+        self.transformer_encoder = nn.TransformerEncoder(
+            encoder_layers, num_layers=num_layers
+        )
 
         self.linear = nn.Linear(self.embed_dim, 1)
 
