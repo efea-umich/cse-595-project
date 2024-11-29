@@ -458,8 +458,8 @@ requires-dist = [
     { name = "ruff", specifier = ">=0.8.0" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "tensorboard", specifier = ">=2.18.0" },
-    { name = "torch", specifier = ">=2.5.1" },
-    { name = "torchaudio", specifier = ">=2.5.1" },
+    { name = "torch", specifier = ">=2.4.1" },
+    { name = "torchaudio", specifier = ">=2.4.1" },
     { name = "torchvision", specifier = ">=0.20.1" },
 ]
 

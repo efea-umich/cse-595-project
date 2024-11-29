@@ -24,6 +24,7 @@ class Main:
         config_path: PathLike,
         data_path: PathLike,
         model_save_dir: PathLike = "model",
+        epochs: int = 10,
     ):
         with open(config_path, "r") as f:
             config = BasketballConfig.model_validate(yaml.safe_load(f))
@@ -57,7 +58,7 @@ class Main:
             n_heads=4,
             num_layers=1,
         )
-        trainer = L.Trainer(max_epochs=10, logger=mlflow_logger)
+        trainer = L.Trainer(max_epochs=epochs, logger=mlflow_logger)
 
         logger.info("Training model")
         trainer.fit(
@@ -88,7 +89,7 @@ class Main:
 
         logger.info("Creating dataset")
         basketball_dataset = BasketballDataset(
-            data, config, num_sequences=5000, sequence_length=30, column_transformer=column_transformer
+            data, config, num_sequences=50000, sequence_length=30, column_transformer=column_transformer
         )
 
         model = TimeSeriesTransformerModel.load_from_checkpoint(model_path)
