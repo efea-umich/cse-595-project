@@ -73,8 +73,6 @@ class DataEnhancer:
 
         return play_side
 
-
-
     def get_play_type(self, data: pd.DataFrame) -> pd.Series:
         play_type_col = pd.Series(np.nan, index=data.index, dtype=object)
         for play_type, column in self.config.play_types.items():

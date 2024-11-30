@@ -22,14 +22,16 @@ class BasketballDataset(Dataset):
         self,
         df: pd.DataFrame,
         config: BasketballConfig,
-        num_sequences=1000,
+        num_sequences=None,
         sequence_length=20,
         pred_horizon=1,
+        sequence_stride=5,
         column_transformer: Optional[ColumnTransformer] = None,
     ):
         self.num_sequences = num_sequences
         self.sequence_length = sequence_length
         self.pred_horizon = pred_horizon
+        self.sequence_stride = sequence_stride
 
         self.config = config
 
@@ -63,17 +65,28 @@ class BasketballDataset(Dataset):
             transformers.append(
                 (
                     "num",
-                    Pipeline([
-                        ("imputer", SimpleImputer(strategy="constant", fill_value=0)),
-                        ("scaler", StandardScaler())
-                    ]),
-                    self.numerical_cols
+                    Pipeline(
+                        [
+                            (
+                                "imputer",
+                                SimpleImputer(strategy="constant", fill_value=0),
+                            ),
+                            ("scaler", StandardScaler()),
+                        ]
+                    ),
+                    self.numerical_cols,
                 )
             )
 
         if self.categorical_cols:
             transformers.append(
-                ("cat", OneHotEncoder(handle_unknown="ignore",), self.categorical_cols)
+                (
+                    "cat",
+                    OneHotEncoder(
+                        handle_unknown="ignore",
+                    ),
+                    self.categorical_cols,
+                )
             )
 
         column_transformer = ColumnTransformer(
@@ -84,7 +97,6 @@ class BasketballDataset(Dataset):
 
         return column_transformer
 
-
     def load_data(self, df: pd.DataFrame):
         with tqdm(total=self.num_sequences) as pbar:
             for game in self.games_iterator(df):
@@ -92,24 +104,31 @@ class BasketballDataset(Dataset):
                 transformed_features = self.transform_df(feature_cols)
                 pred_col = game["WinningTeam"]
 
-                for i in range(len(game) - self.sequence_length - self.pred_horizon):
-                    if i / len(game) > 0.35:
+                i = 0
+                while i < len(game) - self.sequence_length - self.pred_horizon:
+                    if (i + self.sequence_length) / len(game) > 0.50:
                         break
 
-                    features = transformed_features[i:i + self.sequence_length]
-
-                    pred_label_raw = pred_col.values[
-                        i + self.sequence_length + self.pred_horizon - 1
-                    ]
-
-                    pred_label = torch.tensor(pred_label_raw, dtype=torch.float32).reshape(1)
-
-                    self.data.append(features)
-                    self.labels.append(pred_label)
+                    self.add_data_point(
+                        transformed_features, pred_col, i
+                    )
+                    i += self.sequence_stride
 
                     pbar.update(1)
-                    if len(self.data) == self.num_sequences:
+                    if self.num_sequences is not None and len(self.data) == self.num_sequences:
                         return
+
+    def add_data_point(self, transformed_features, pred_col, i) -> None:
+        """
+        Adds a data point to the dataset
+        """
+        features = transformed_features[i : i + self.sequence_length]
+
+        pred_label_raw = pred_col.values[i + self.sequence_length + self.pred_horizon - 1]
+        pred_label = torch.tensor(pred_label_raw, dtype=torch.float32).reshape(1)
+
+        self.data.append(features)
+        self.labels.append(pred_label)
 
     def transform_df(self, df: pd.DataFrame):
         """
@@ -131,13 +150,12 @@ class BasketballDataset(Dataset):
 
         return tensor
 
-
     def games_iterator(self, df: pd.DataFrame):
         for game_id, game_df in df.groupby("URL"):
             yield game_df
 
     def __len__(self):
-        return self.num_sequences
+        return len(self.data)
 
     def __getitem__(self, idx):
         return self.data[idx], self.labels[idx]
