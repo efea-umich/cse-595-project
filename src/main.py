@@ -28,10 +28,10 @@ class Main:
         config_path: PathLike,
         data_path: PathLike,
         model_save_dir: PathLike = "model",
-        num_sequences: int = 100000,
+        num_sequences: int = None,
         sequence_length: int = 60,
         sequence_stride: int = 60,
-        test_val_split: float = 0.2,
+        test_val_split: float = 0.35,
         epochs: int = 10,
     ):
         with open(config_path, "r") as f:
@@ -74,7 +74,7 @@ class Main:
         else:
             trainer_args = {}
 
-        trainer = L.Trainer(max_epochs=epochs, logger=mlflow_logger, callbacks=[EarlyStopping(monitor="val_loss", patience=5)], **trainer_args)
+        trainer = L.Trainer(max_epochs=epochs, logger=mlflow_logger, callbacks=[EarlyStopping(monitor="val_loss", patience=15)], **trainer_args)
 
         logger.info("Training model")
         trainer.fit(
