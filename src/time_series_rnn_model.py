@@ -6,35 +6,34 @@ import torchmetrics
 from positional_encoding import PositionalEncoding
 
 
-class TimeSeriesTransformerModel(L.LightningModule):
+class TimeSeriesRNNModel(L.LightningModule):
     def __init__(
         self,
         seq_len: int,
         features_per_step: int,
-        embed_dim: int,
-        n_heads: int,
+        hidden_dim: int,
         num_layers: int = 1,
-        feedforward_dim: int = 128,
+        dropout: float = 0.0,
     ):
-        super(TimeSeriesTransformerModel, self).__init__()
+        super(TimeSeriesRNNModel, self).__init__()
         self.save_hyperparameters()
 
         self.seq_len = seq_len
         self.features_per_step = features_per_step
-        self.embed_dim = embed_dim
-        self.n_heads = n_heads
-        self.feedforward_dim = feedforward_dim
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.dropout = dropout
 
-        self.embedder = nn.Linear(self.features_per_step, self.embed_dim)
-        self.pos_encoder = PositionalEncoding(self.embed_dim, batch_first=True)
-        encoder_layers = nn.TransformerEncoderLayer(
-            self.embed_dim, self.n_heads, dim_feedforward=self.feedforward_dim, batch_first=True
+        self.embedder = nn.Linear(self.features_per_step, self.hidden_dim)
+        self.rnn = nn.RNN(
+            input_size=self.hidden_dim, 
+            hidden_size=self.hidden_dim, 
+            num_layers=self.num_layers,
+            batch_first=True,
+            dropout=self.dropout,
+            nonlinearity="relu"  # You can change it to 'tanh' if preferred
         )
-        self.transformer_encoder = nn.TransformerEncoder(
-            encoder_layers, num_layers=num_layers
-        )
-
-        self.linear = nn.Linear(self.embed_dim, 1)
+        self.linear = nn.Linear(self.hidden_dim, 1)
 
     def forward(self, x, padding_mask=None):
         """
@@ -47,9 +46,14 @@ class TimeSeriesTransformerModel(L.LightningModule):
         """
         x = x.reshape(-1, self.seq_len, self.features_per_step)
         x = self.embedder(x)
-        x = self.pos_encoder(x)
-        x = self.transformer_encoder(x, src_key_padding_mask=padding_mask)
-        pred_raw = self.linear(x)
+
+        # RNN expects the input shape (batch_size, seq_len, input_size)
+        rnn_out, _ = self.rnn(x)  # we ignore the hidden state here
+
+        # Take the output from the last time step
+        rnn_out_last = rnn_out[:, -1, :]
+
+        pred_raw = self.linear(rnn_out_last)
         pred = torch.sigmoid(pred_raw)
         return pred
 
@@ -70,7 +74,7 @@ class TimeSeriesTransformerModel(L.LightningModule):
         padding_mask = self.create_padding_mask(x)
         y_hat = self(x, padding_mask=padding_mask)
 
-        y_hat = y_hat[:, -1, :]
+        y_hat = y_hat[:, -1].reshape(y.shape)
 
         loss = nn.BCELoss()(y_hat, y)
         accuracy = (y_hat.round() == y).float().mean()
@@ -84,7 +88,7 @@ class TimeSeriesTransformerModel(L.LightningModule):
         padding_mask = self.create_padding_mask(x)
         y_hat = self(x, padding_mask=padding_mask)
 
-        y_hat = y_hat[:, -1, :]
+        y_hat = y_hat[:, -1].reshape(y.shape)
 
         loss = nn.BCELoss()(y_hat, y)
         accuracy = (y_hat.round() == y).float().mean()
